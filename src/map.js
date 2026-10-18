@@ -164,10 +164,11 @@ export function createMap(svg, topology, handlers, initial = null) {
 
   const fit = (mode = 'all') => {
     const { width, height } = svg.getBoundingClientRect();
-    const pad = { left: 270, right: 40, top: 70, bottom: 40 };
+    const pad = handlers.padding?.() ?? { left: 270, right: 40, top: 70, bottom: 40 };
     const sx = (width - pad.left - pad.right) / (bounds.maxX - bounds.minX);
     const sy = (height - pad.top - pad.bottom) / (bounds.maxY - bounds.minY);
-    const s = mode === 'home' ? sy : Math.min(sx, sy);
+    const lan = (topology.nodes.get('trunk')?.x ?? bounds.maxX) + 80 - bounds.minX;
+    const s = mode === 'home' ? Math.min(sy, (width - pad.left - pad.right) / lan) : Math.min(sx, sy);
     minScale = Math.min(sx, sy) * 0.8;
     transform.s = s;
     transform.x = mode === 'home' ? pad.left - bounds.minX * s : pad.left + (width - pad.left - pad.right - (bounds.maxX - bounds.minX) * s) / 2 - bounds.minX * s;
@@ -180,16 +181,44 @@ export function createMap(svg, topology, handlers, initial = null) {
     return { x: (cx - r.left - transform.x) / transform.s, y: (cy - r.top - transform.y) / transform.s };
   };
 
+  const clampScale = (s) => Math.min(3, Math.max(minScale, s));
+  const local = (x, y) => {
+    const r = svg.getBoundingClientRect();
+    return { x: x - r.left, y: y - r.top };
+  };
+  const pointers = new Map();
+  const pair = () => {
+    const [a, b] = [...pointers.values()];
+    return { d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), mid: local((a.x + b.x) / 2, (a.y + b.y) / 2) };
+  };
+
   let drag = null;
+  let pinch = null;
   listen('pointerdown', (e) => {
-    drag = { x: e.clientX, y: e.clientY, ox: transform.x, oy: transform.y, moved: false };
-    handlers.onHover?.(null);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     svg.setPointerCapture(e.pointerId);
+    handlers.onHover?.(null);
+    if (pointers.size === 2) {
+      pinch = { ...pair(), s: transform.s, ox: transform.x, oy: transform.y };
+      drag = null;
+      return;
+    }
+    if (pointers.size === 1) drag = { x: e.clientX, y: e.clientY, ox: transform.x, oy: transform.y, moved: false, slop: e.pointerType === 'touch' ? 10 : 4 };
   });
   listen('pointermove', (e) => {
+    if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pointers.size >= 2) {
+      const { d, mid } = pair();
+      const s = clampScale((pinch.s * d) / pinch.d);
+      transform.x = mid.x - ((pinch.mid.x - pinch.ox) * s) / pinch.s;
+      transform.y = mid.y - ((pinch.mid.y - pinch.oy) * s) / pinch.s;
+      transform.s = s;
+      apply();
+      return;
+    }
     if (drag) {
       const [dx, dy] = [e.clientX - drag.x, e.clientY - drag.y];
-      if (Math.hypot(dx, dy) > 4) drag.moved = true;
+      if (Math.hypot(dx, dy) > drag.slop) drag.moved = true;
       if (drag.moved) {
         transform.x = drag.ox + dx;
         transform.y = drag.oy + dy;
@@ -200,10 +229,25 @@ export function createMap(svg, topology, handlers, initial = null) {
     const target = e.target.closest('[data-node]');
     handlers.onHover?.(target ? target.dataset.node : null, e.clientX, e.clientY);
   });
+  const release = (e) => {
+    pointers.delete(e.pointerId);
+    if (!pinch) return false;
+    if (pointers.size < 2) {
+      pinch = null;
+      const rest = [...pointers.values()][0];
+      drag = rest ? { x: rest.x, y: rest.y, ox: transform.x, oy: transform.y, moved: true, slop: 0 } : null;
+    }
+    return true;
+  };
+  listen('pointercancel', (e) => {
+    release(e);
+    drag = null;
+  });
   listen('pointerup', (e) => {
+    if (release(e)) return;
     const wasDrag = drag?.moved;
     drag = null;
-    if (wasDrag) return;
+    if (wasDrag || pointers.size) return;
     const world = toWorld(e.clientX, e.clientY);
     const hit = document.elementFromPoint(e.clientX, e.clientY);
     const nodeTarget = hit?.closest('[data-node]');
@@ -216,7 +260,7 @@ export function createMap(svg, topology, handlers, initial = null) {
     const r = svg.getBoundingClientRect();
     const [mx, my] = [e.clientX - r.left, e.clientY - r.top];
     handlers.onHover?.(null);
-    const s = Math.min(3, Math.max(minScale, transform.s * Math.exp(-e.deltaY * 0.0015)));
+    const s = clampScale(transform.s * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)));
     transform.x = mx - ((mx - transform.x) * s) / transform.s;
     transform.y = my - ((my - transform.y) * s) / transform.s;
     transform.s = s;

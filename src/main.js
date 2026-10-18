@@ -4,6 +4,7 @@ import { createHud } from './hud.js';
 import { createMap } from './map.js';
 import { createDots } from './dots.js';
 import { createConversations } from './conversations.js';
+import { createView } from './view.js';
 import { connectLive, api } from './live.js';
 
 const LIVE = !new URLSearchParams(location.search).has('sim');
@@ -131,8 +132,11 @@ const refreshDive = () => {
   else world.map.setFocus(null, null);
 };
 
+const view = createView();
+
 const select = (target) => {
   state.selected = target;
+  if (target && view.compact()) view.setSheet(null);
   refreshDive();
   hud.renderInspect();
 };
@@ -145,6 +149,7 @@ const handlers = {
     if (edge) return select(trackFor(edge));
     return select(null);
   },
+  padding: () => view.padding(),
   onHover: (id, x, y) => {
     const node = id ? nodeOf(id) : null;
     state.hovered = node;
@@ -264,6 +269,7 @@ hud.on('select-node', (id) => {
 });
 hud.on('close', () => select(null));
 hud.on('reset-view', () => world.map.fit());
+document.getElementById('m-fit').addEventListener('click', () => world.map?.fit());
 hud.on('device-form', async ({ action, station, device, network, data }) => {
   try {
     if (action === 'network-update') {
@@ -303,6 +309,7 @@ window.addEventListener('keydown', (e) => {
     hud.togglePause();
   } else if (e.code === 'Escape') select(null);
   else if (e.code === 'KeyF') world.map?.fit();
+  else if (e.code === 'KeyH') view.toggleHud();
 });
 
 const refreshLive = (now) => {

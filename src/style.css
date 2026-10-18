@@ -24,6 +24,7 @@ html, body {
 }
 
 #stage { position: fixed; inset: 0; }
+html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 #map { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; user-select: none; }
 #map:active { cursor: grabbing; }
 #dots { position: absolute; inset: 0; pointer-events: none; }
@@ -74,6 +75,7 @@ h2:first-child { margin-top: 0; }
 .kpis div:first-child { padding-left: 0; border-left: 0; }
 .kpis b { font: 500 20px var(--mono); color: var(--bright); line-height: 1.2; }
 .kpis span { font-size: 11px; color: var(--muted); }
+.kpis .short { display: none; }
 
 #controls {
   top: 124px;
@@ -113,10 +115,10 @@ input[type='range']::-moz-range-thumb { width: 8px; height: 8px; background: #ff
 .actions button.on { color: #fff; background: var(--amber); border-color: var(--amber); }
 
 #inspect {
-  top: 12px;
+  top: 58px;
   right: 12px;
   width: 340px;
-  max-height: calc(100vh - 330px);
+  max-height: calc(100vh - 376px);
   overflow: auto;
   padding: 12px 14px;
   scrollbar-width: none;
@@ -222,9 +224,78 @@ kbd { font: 10px var(--mono); border: 1px solid var(--rule); background: #fff; p
 .arc-label rect { fill: #fff; stroke-width: 1.5; }
 .arc-label text { font: 600 calc(12px * var(--k, 1)) var(--sans); fill: var(--ink); }
 
+#view-tools {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+#view-tools button { width: 34px; height: 34px; display: grid; place-items: center; color: var(--text); }
+#view-tools button[hidden] { display: none; }
+#view-tools button + button { border-left: 1px solid var(--rule); }
+#view-tools button:hover { background: #f3f5f8; }
+#view-tools svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#hud-toggle svg { transition: transform 0.2s; }
+#fullscreen .exit, #fullscreen[aria-pressed='true'] .enter { display: none; }
+#fullscreen[aria-pressed='true'] .exit { display: block; }
+body.hud-hidden #hud-toggle svg { transform: rotate(180deg); }
+body.hud-hidden #top, body.hud-hidden #controls, body.hud-hidden #feed, body.hud-hidden #help,
+body.hud-hidden #inspect, body.hud-hidden #sheet-tabs { display: none !important; }
+
+#sheet-tabs { display: none; }
+
 @media (max-width: 760px) {
-  #controls, #feed, #help { display: none; }
-  #inspect { top: auto; bottom: 12px; left: 12px; right: 12px; width: auto; max-height: 45vh; }
+  #top { top: calc(8px + env(safe-area-inset-top)); left: 8px; right: 60px; padding: 8px 10px; gap: 6px; }
+  .title { gap: 8px; min-width: 0; }
+  h1 { font-size: 14px; white-space: nowrap; }
+  .sim { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kpis div { flex: 1; min-width: 0; padding: 0 6px; }
+  .kpis b { font-size: 15px; }
+  .kpis span { font-size: 9.5px; line-height: 1.2; white-space: nowrap; }
+  .kpis .long { display: none; }
+  .kpis .short { display: inline; }
+
+  #view-tools { top: calc(8px + env(safe-area-inset-top)); right: 8px; flex-direction: column; }
+  #view-tools button { width: 44px; height: 44px; }
+  #view-tools button + button { border-left: 0; border-top: 1px solid var(--rule); }
+
+  #help { display: none; }
+  #sheet-tabs {
+    display: flex;
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+  }
+  #sheet-tabs button { flex: 1; height: 44px; color: var(--text); font-size: 13px; font-weight: 600; }
+  #sheet-tabs button + button { border-left: 1px solid var(--rule); }
+  #sheet-tabs button.on { background: var(--ink); color: #fff; }
+
+  #controls, #feed, #inspect {
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: calc(60px + env(safe-area-inset-bottom));
+    width: auto;
+    max-height: 52dvh;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  #controls, #feed { display: none; }
+  body.sheet-controls #controls, body.sheet-feed #feed { display: block; }
+
+  #controls li { padding: 6px 0; }
+  .seg button { padding: 6px 10px; }
+  .actions button { padding: 8px 12px; }
+  #feed li { grid-template-columns: 4px 92px 1fr 58px; padding: 3px 0; }
+  #feed .t { display: none; }
+  .device-form input, .device-form select { font-size: 16px; }
 }
 
 body.mode-live .sim-only, body:not(.mode-live) .live-only { display: none !important; }

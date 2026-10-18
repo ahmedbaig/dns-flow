@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fbfbfa">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>DNS Flow</title>
   <link rel="stylesheet" href="src/style.css">
 </head>
@@ -20,7 +24,7 @@
     </div>
     <div class="kpis">
       <div><b id="kpi-qps">0</b><span>DNS / s</span></div>
-      <div><b id="kpi-conn">0</b><span>Connections / s</span></div>
+      <div><b id="kpi-conn">0</b><span><span class="long">Connections</span><span class="short">Conn</span> / s</span></div>
       <div><b id="kpi-total">0</b><span>Lookups</span></div>
       <div><b id="kpi-block">0%</b><span>Blocked</span></div>
       <div><b id="kpi-live">0</b><span>In flight</span></div>
@@ -54,6 +58,16 @@
     </div>
   </aside>
 
+  <nav id="view-tools">
+    <button id="fullscreen" type="button" aria-label="Full screen" aria-pressed="false" title="Full screen">
+      <svg class="enter" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
+      <svg class="exit" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2v4H2M14 6h-4V2M10 14v-4h4M2 10h4v4"/></svg>
+    </button>
+    <button id="hud-toggle" type="button" aria-label="Hide panels" aria-pressed="false" title="Hide panels (H)">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>
+    </button>
+  </nav>
+
   <aside id="inspect" class="frame hidden"></aside>
 
   <section id="feed">
@@ -62,8 +76,14 @@
   </section>
 
   <footer id="help">
-    Drag to pan · scroll to zoom · <kbd>F</kbd> fit · click a station, line or packet to dive in · <kbd>Space</kbd> pause · <kbd>Esc</kbd> clear
+    Drag to pan · scroll to zoom · <kbd>F</kbd> fit · click a station, line or packet to dive in · <kbd>Space</kbd> pause · <kbd>H</kbd> hide panels · <kbd>Esc</kbd> clear
   </footer>
+
+  <nav id="sheet-tabs">
+    <button type="button" data-sheet="controls">Legend</button>
+    <button type="button" data-sheet="feed">Lookups</button>
+    <button type="button" id="m-fit">Fit</button>
+  </nav>
 
   <div id="tooltip" class="hidden"></div>
 
