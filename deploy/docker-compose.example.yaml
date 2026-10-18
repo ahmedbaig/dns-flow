@@ -1,0 +1,17 @@
+services:
+  flow:
+    build: ..
+    image: dns-flow:local
+    container_name: flow
+    restart: always
+    ports:
+      - "8787:8787"
+    environment:
+      DATABASE_URL: postgres://flow:change-me@db.example.lan:5432/flow
+      ADGUARD_URL: http://10.10.20.2
+      ADGUARD_AUTH: base64-of-user:password
+      LOKI_URL: http://10.10.20.5:3100
+      PROM_URL: http://10.10.20.5:9090
+      WIREGUARD_HOST: 10.10.50.20
+    volumes:
+      - ./data:/data

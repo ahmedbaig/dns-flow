@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DNS Flow</title>
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <div id="stage">
+    <svg id="map"></svg>
+    <canvas id="dots"></canvas>
+  </div>
+
+  <header id="top" class="frame">
+    <div class="title">
+      <span class="live"></span>
+      <h1>Home network</h1>
+      <span class="sim">Connecting…</span>
+    </div>
+    <div class="kpis">
+      <div><b id="kpi-qps">0</b><span>DNS / s</span></div>
+      <div><b id="kpi-conn">0</b><span>Connections / s</span></div>
+      <div><b id="kpi-total">0</b><span>Lookups</span></div>
+      <div><b id="kpi-block">0%</b><span>Blocked</span></div>
+      <div><b id="kpi-live">0</b><span>In flight</span></div>
+    </div>
+  </header>
+
+  <aside id="controls">
+    <h2>Traffic</h2>
+    <ul id="legend"></ul>
+    <h2>Networks</h2>
+    <ul id="zones"></ul>
+    <h2 class="live-only">Unknown devices <span id="unknown-count"></span></h2>
+    <ul id="unknown" class="live-only"></ul>
+    <h2 class="sim-only">Simulation</h2>
+    <label class="slider sim-only"><span>Rate</span><output id="rate-out">10</output><input id="rate" type="range" min="1" max="80" value="10"></label>
+    <label class="slider sim-only"><span>Speed</span><output id="speed-out">1.0×</output><input id="speed" type="range" min="0.1" max="3" step="0.1" value="1"></label>
+    <div class="row"><span>Names</span>
+      <div class="seg" data-key="names">
+        <button data-v="full" class="on">Full</button><button data-v="domain">Domain</button><button data-v="hidden">Hidden</button>
+      </div>
+    </div>
+    <div class="row"><span>Labels</span>
+      <div class="seg" data-key="deviceLabels">
+        <button data-v="auto" class="on">Auto</button><button data-v="always">All</button><button data-v="off">Hover</button>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="pause">Pause</button>
+      <button id="storm" class="sim-only">IoT storm</button>
+      <button id="reset-view">Fit map</button>
+    </div>
+  </aside>
+
+  <aside id="inspect" class="frame hidden"></aside>
+
+  <section id="feed">
+    <h2>Live DNS lookups</h2>
+    <ol id="feed-list"></ol>
+  </section>
+
+  <footer id="help">
+    Drag to pan · scroll to zoom · <kbd>F</kbd> fit · click a station, line or packet to dive in · <kbd>Space</kbd> pause · <kbd>Esc</kbd> clear
+  </footer>
+
+  <div id="tooltip" class="hidden"></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

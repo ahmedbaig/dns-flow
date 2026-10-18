@@ -1,0 +1,49 @@
+// Receives the UniFi gateway's "Activity Logging (SIEM server)" stream and ships
+// it to Loki. Point UniFi at <this host>:1514 (UDP or TCP).
+//
+// Expects a loki.write "central" component elsewhere in the config.
+
+loki.relabel "unifi" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__syslog_message_severity"]
+    target_label  = "level"
+  }
+  rule {
+    source_labels = ["__syslog_message_hostname"]
+    target_label  = "device"
+  }
+}
+
+loki.source.syslog "unifi" {
+  listener {
+    address       = "0.0.0.0:1514"
+    protocol      = "udp"
+    syslog_format = "rfc3164"
+    labels        = { job = "unifi", source = "ux7" }
+  }
+
+  listener {
+    address       = "0.0.0.0:1514"
+    protocol      = "tcp"
+    syslog_format = "rfc3164"
+    labels        = { job = "unifi", source = "ux7" }
+  }
+
+  relabel_rules = loki.relabel.unifi.rules
+  forward_to    = [loki.process.unifi.receiver]
+}
+
+// UniFi writes the program name into the message, not the syslog header, so it
+// is extracted from the line to give each line an `ident` label.
+loki.process "unifi" {
+  forward_to = [loki.write.central.receiver]
+
+  stage.regex {
+    expression = "^\\S+ (?P<ident>[A-Za-z0-9_.-]+)(\\[\\d+\\])?:"
+  }
+  stage.labels {
+    values = { ident = "" }
+  }
+}
