@@ -35,6 +35,7 @@ It runs against a real homelab (UniFi gateway, AdGuard Home + Unbound, WireGuard
 - **Device registry.** A small Postgres database holds friendly names. Unknown MACs appear on the map; click one to name it, set its type and owner, or link it to an existing device (private Wi-Fi MACs rotate). Every edit is audited with the signed-in user.
 - **Editable networks.** Rename, pin, hide or merge the destination networks (for example, merge two ASNs that are the same company).
 - **Observed connections.** Turn on logging for the LAN → internet firewall policy and connections become observed flows instead of being inferred from DNS.
+- **History.** A bottom-left panel shows the last 12 or 24 hours of lookups, stacked by VLAN in each line's colour, with blocked lookups in red. It is kept in two unlogged Postgres ring buffers (one slot per minute per VLAN, one per five minutes per device) that are rewritten in place, so they stay around 1–2 MB forever. When they are empty, the bridge backfills the last 24 hours from the AdGuard query log.
 - **Simulator.** `?sim` runs the whole map on an example household with synthetic traffic.
 
 ## How it works
@@ -130,6 +131,7 @@ In the author's homelab the whole stack is deployed with Ansible from [ahmedbaig
 | `POST` | `/api/stations/:id/name` | Name an unknown station `{ name, type, owner }` |
 | `POST` | `/api/stations/:id/assign` | Link an unknown station to a device `{ deviceId }` |
 | `PATCH` | `/api/devices/:id` | Edit a device `{ name, type, owner, notes, hidden }` |
+| `GET` | `/api/history?hours=24` | Lookups and blocked per VLAN, one bucket per minute (1–24 h) |
 | `GET` | `/api/networks` | Destination networks on the map |
 | `PATCH` | `/api/networks/:key` | Rename, pin or hide a network |
 | `POST` | `/api/networks/:key/merge` | Merge a network into another `{ into }` |
