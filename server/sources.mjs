@@ -17,6 +17,13 @@ const outcomeOf = (e) => {
   return 'cached';
 };
 
+const toQuery = (e, t = nanos(e.time)) => ({
+  ts: Number(t / 1000000n), client: e.client, qname: e.question?.name ?? '', qtype: e.question?.type ?? '',
+  outcome: outcomeOf(e), upstream: e.upstream || null, ms: Number(e.elapsedMs) || 0, reason: e.reason,
+  ips: (e.answer ?? []).filter((a) => a.type === 'A' || a.type === 'AAAA').map((a) => a.value),
+  cnames: (e.answer ?? []).filter((a) => a.type === 'CNAME').map((a) => String(a.value).replace(/\.$/, '')),
+});
+
 export function pollAdguard({ url, auth, onQuery, intervalMs = 1500 }) {
   let cursor = BigInt(Date.now() - 3000) * 1000000n;
   const run = async () => {
@@ -28,12 +35,7 @@ export function pollAdguard({ url, auth, onQuery, intervalMs = 1500 }) {
         const fresh = data.map((e) => ({ e, t: nanos(e.time) })).filter(({ t }) => t > cursor).sort((a, b) => (a.t < b.t ? -1 : 1));
         for (const { e, t } of fresh) {
           cursor = t;
-          onQuery({
-            ts: Number(t / 1000000n), client: e.client, qname: e.question?.name ?? '', qtype: e.question?.type ?? '',
-            outcome: outcomeOf(e), upstream: e.upstream || null, ms: Number(e.elapsedMs) || 0, reason: e.reason,
-            ips: (e.answer ?? []).filter((a) => a.type === 'A' || a.type === 'AAAA').map((a) => a.value),
-            cnames: (e.answer ?? []).filter((a) => a.type === 'CNAME').map((a) => String(a.value).replace(/\.$/, '')),
-          });
+          onQuery(toQuery(e, t));
         }
       } catch (err) {
         console.error('adguard poll failed:', err.message);
@@ -43,6 +45,28 @@ export function pollAdguard({ url, auth, onQuery, intervalMs = 1500 }) {
     }
   };
   run();
+}
+
+// Walks the query log backwards from now to `since` (ms), a page at a time.
+export async function readAdguardSince({ url, auth, since, onQuery, pageSize = 1000 }) {
+  let olderThan = '';
+  let pages = 0;
+  for (;;) {
+    const res = await fetch(`${url}/control/querylog?limit=${pageSize}${olderThan ? `&older_than=${encodeURIComponent(olderThan)}` : ''}`, {
+      headers: { Authorization: `Basic ${auth}` },
+    });
+    if (!res.ok) throw new Error(`querylog ${res.status}`);
+    const { data = [], oldest } = await res.json();
+    pages += 1;
+    for (const e of data) {
+      const q = toQuery(e);
+      if (q.ts < since) return pages;
+      onQuery(q);
+    }
+    if (!data.length || !oldest || oldest === olderThan) return pages;
+    olderThan = oldest;
+    await sleep(50);
+  }
 }
 
 export function tailLoki({ url, query, onLine, name }) {

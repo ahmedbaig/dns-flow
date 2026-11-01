@@ -1,12 +1,13 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { config } from './config.mjs';
+import { config, zoneForIp } from './config.mjs';
 import { openDb } from './db.mjs';
 import { createRegistry } from './registry.mjs';
 import { createNetworks } from './networks.mjs';
 import { loadAsnTable } from './asn.mjs';
-import { pollAdguard, tailLoki, parseUnifi, parseNginx, parseFirewall, pollPrometheus } from './sources.mjs';
+import { createHistory } from './history.mjs';
+import { pollAdguard, readAdguardSince, tailLoki, parseUnifi, parseNginx, parseFirewall, pollPrometheus } from './sources.mjs';
 
 const HOST_OWN = /(^|\.)(ipify\.org|ifconfig\.me|ip-api\.com|debian\.org|debian\.net)$/;
 
@@ -35,6 +36,7 @@ let lastSignature = '';
 let timer = null;
 
 const db = await openDb(config.databaseUrl);
+const history = await createHistory(db);
 const registry = await createRegistry(db, () => {
   clearTimeout(timer);
   timer = setTimeout(emitStations, 400);
@@ -89,9 +91,31 @@ pollAdguard({
     if (net && !destinationSignature) emitDestinations();
     const tunnel = viaTunnel(q.client, q.qname);
     const clientId = await registry.resolveClient(q.client);
+    history.record({ ts: q.ts, zone: tunnel ? 'vpn' : zoneForIp(q.client) ?? 'other', station: tunnel?.clientId ?? clientId, blocked: q.outcome === 'blocked' });
     broadcast('dns', { ...q, ips: q.ips.slice(0, 4), clientId: tunnel?.clientId ?? clientId, tunnel, dest, net });
   },
 });
+
+// Fill the history panel from AdGuard's own log when the ring buffer is
+// mostly empty (first start, or Postgres was restarted after a crash).
+const backfill = async () => {
+  if ((await history.coverage()) > 20 * 60) return;
+  const started = Date.now();
+  const load = history.bulk();
+  const pages = await readAdguardSince({
+    url: config.adguardUrl,
+    auth: config.adguardAuth,
+    since: started - 24 * 60 * 60 * 1000,
+    onQuery: (q) => {
+      if (SKIP_CLIENTS.test(q.client)) return;
+      const vpn = q.client === config.wireguardHost && !HOST_OWN.test(q.qname);
+      load.add({ ts: q.ts, zone: vpn ? 'vpn' : zoneForIp(q.client) ?? 'other', station: vpn ? null : registry.stationForIp(q.client) ?? `ip:${q.client}`, blocked: q.outcome === 'blocked' });
+    },
+  });
+  const minutes = await load.finish();
+  console.log(`history backfill: ${minutes} minutes from ${pages} AdGuard pages in ${Math.round((Date.now() - started) / 1000)} s`);
+};
+backfill().catch((err) => console.error('history backfill failed:', err.message));
 
 tailLoki({
   url: config.lokiUrl,
@@ -183,6 +207,7 @@ const routes = [
       streams.delete(res);
     });
   }],
+  ['GET', /^\/api\/history$/, async (req, res) => json(res, 200, await history.series(new URL(req.url, 'http://local').searchParams.get('hours')))],
   ['GET', /^\/api\/stations$/, (_req, res) => json(res, 200, stations())],
   ['GET', /^\/api\/devices$/, (_req, res) => json(res, 200, registry.deviceList())],
   ['POST', /^\/api\/stations\/([^/]+)\/name$/, async (req, res, [id]) => {

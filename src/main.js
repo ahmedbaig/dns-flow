@@ -6,6 +6,7 @@ import { createDots } from './dots.js';
 import { createConversations } from './conversations.js';
 import { createView } from './view.js';
 import { connectLive, api } from './live.js';
+import { createHistory } from './history.js';
 
 const LIVE = !new URLSearchParams(location.search).has('sim');
 const PROXY_IP = '10.10.20.3';
@@ -255,6 +256,7 @@ if (LIVE) {
     },
     status: (s) => setStatus(s === 'live' ? 'Live · AdGuard · UniFi · nginx · WireGuard' : 'Reconnecting to bridge…'),
   });
+  createHistory();
 } else {
   setStatus('Simulated traffic · example household');
   rebuild(undefined);

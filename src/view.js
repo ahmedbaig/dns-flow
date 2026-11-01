@@ -29,10 +29,10 @@ export function createView() {
   const toggleHud = () => setHud(!body.classList.contains('hud-hidden'));
 
   const setSheet = (name) => {
-    ['controls', 'feed'].forEach((s) => body.classList.toggle(`sheet-${s}`, s === name));
+    ['controls', 'feed', 'history'].forEach((s) => body.classList.toggle(`sheet-${s}`, s === name));
     document.querySelectorAll('#sheet-tabs [data-sheet]').forEach((b) => b.classList.toggle('on', b.dataset.sheet === name));
   };
-  const openSheet = () => ['controls', 'feed'].find((s) => body.classList.contains(`sheet-${s}`)) ?? null;
+  const openSheet = () => ['controls', 'feed', 'history'].find((s) => body.classList.contains(`sheet-${s}`)) ?? null;
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement) document.exitFullscreen?.();

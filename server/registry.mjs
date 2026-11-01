@@ -170,5 +170,5 @@ export async function createRegistry(db, onChange) {
 
   const deviceList = () => [...devices.values()].map((d) => ({ id: d.id, name: d.name, type: d.type, hidden: d.hidden }));
 
-  return { observe, resolveClient, deviceForPeer, stations, nameStation, assignStation, updateDevice, deviceList, devices };
+  return { observe, resolveClient, stationForIp, deviceForPeer, stations, nameStation, assignStation, updateDevice, deviceList, devices };
 }

@@ -10,7 +10,9 @@
   --ink: #1d2433;
   --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif;
   --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --history-h: 0px;
 }
+body.mode-live { --history-h: 146px; }
 
 * { box-sizing: border-box; }
 
@@ -56,7 +58,7 @@ h2 {
 h2::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
 h2:first-child { margin-top: 0; }
 
-#top, #controls, #inspect, #feed {
+#top, #controls, #inspect, #feed, #history {
   position: fixed;
   background: var(--panel);
   border: 1px solid var(--rule);
@@ -81,7 +83,7 @@ h2:first-child { margin-top: 0; }
   top: 124px;
   left: 12px;
   width: 236px;
-  max-height: calc(100vh - 170px);
+  max-height: calc(100vh - 170px - var(--history-h));
   overflow: auto;
   padding: 12px 14px;
   scrollbar-width: none;
@@ -159,6 +161,14 @@ input[type='range']::-moz-range-thumb { width: 8px; height: 8px; background: #ff
 #feed li span { overflow: hidden; text-overflow: ellipsis; }
 #feed .t { color: var(--muted); }
 #feed .o { text-align: right; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+#history { left: 12px; bottom: 34px; width: 236px; padding: 10px 14px 8px; }
+#history h2 { margin: 0 0 6px; }
+#history h2 .seg { order: 2; }
+#history h2 .seg button { text-transform: none; letter-spacing: 0; font-weight: 500; }
+#history-chart { display: block; width: 100%; height: 80px; cursor: crosshair; touch-action: none; }
+.history-read { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; font: 10.5px var(--mono); color: var(--muted); white-space: nowrap; }
+.history-read span:last-child { overflow: hidden; text-overflow: ellipsis; color: var(--text); }
 
 #help { position: fixed; left: 12px; bottom: 10px; color: var(--muted); font-size: 11px; }
 kbd { font: 10px var(--mono); border: 1px solid var(--rule); background: #fff; padding: 0 4px; margin: 0 1px; color: var(--text); }
@@ -242,7 +252,7 @@ kbd { font: 10px var(--mono); border: 1px solid var(--rule); background: #fff; p
 #fullscreen .exit, #fullscreen[aria-pressed='true'] .enter { display: none; }
 #fullscreen[aria-pressed='true'] .exit { display: block; }
 body.hud-hidden #hud-toggle svg { transform: rotate(180deg); }
-body.hud-hidden #top, body.hud-hidden #controls, body.hud-hidden #feed, body.hud-hidden #help,
+body.hud-hidden #top, body.hud-hidden #controls, body.hud-hidden #feed, body.hud-hidden #help, body.hud-hidden #history,
 body.hud-hidden #inspect, body.hud-hidden #sheet-tabs { display: none !important; }
 
 #sheet-tabs { display: none; }
@@ -277,7 +287,7 @@ body.hud-hidden #inspect, body.hud-hidden #sheet-tabs { display: none !important
   #sheet-tabs button + button { border-left: 1px solid var(--rule); }
   #sheet-tabs button.on { background: var(--ink); color: #fff; }
 
-  #controls, #feed, #inspect {
+  #controls, #feed, #inspect, #history {
     top: auto;
     left: 8px;
     right: 8px;
@@ -287,8 +297,9 @@ body.hud-hidden #inspect, body.hud-hidden #sheet-tabs { display: none !important
     overflow: auto;
     overscroll-behavior: contain;
   }
-  #controls, #feed { display: none; }
-  body.sheet-controls #controls, body.sheet-feed #feed { display: block; }
+  #controls, #feed, #history { display: none; }
+  body.sheet-controls #controls, body.sheet-feed #feed, body.sheet-history #history { display: block; }
+  #history-chart { height: 120px; }
 
   #controls li { padding: 6px 0; }
   .seg button { padding: 6px 10px; }
